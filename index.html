@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+    <title>Tennis Bingo Quiz - Strict Mobile Portrait</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    screens: {
+                        'xs': '375px',
+                        'xxs': '320px',
+                    },
+                    colors: {
+                        'tennis-yellow': '#ffe72b',
+                        'court-navy': '#11131c',
+                        'court-navy-light': '#191b24',
+                    },
+                    fontFamily: {
+                        sans: ['Oswald', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #11131c;
+            color: white;
+            font-family: 'Oswald', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            height: 100vh;
+            height: -webkit-fill-available;
+            width: 100vw;
+        }
+
+        .bingo-grid {
+            display: grid;
+            height: 100%;
+            width: 100%;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-3px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(3px);
+            }
+        }
+
+        .shake-animation {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        .glass-panel {
+            background: rgba(25, 27, 36, 0.7) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .court-bg {
+            background-color: #11131c;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col court-bg select-none h-screen overflow-hidden justify-between">
+    <!-- Top App Bar -->
+    <header
+        class="bg-court-navy/90 border-b border-white/10 px-2.5 h-9 flex justify-between items-center shrink-0 z-50">
+        <div class="flex items-center gap-1">
+            <span class="material-icons text-tennis-yellow text-xs">sports_tennis</span>
+            <h1 class="text-xs font-bold tracking-tight text-tennis-yellow uppercase">Tennis Bingo</h1>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <div class="bg-court-navy-light border border-white/10 rounded px-1 py-0.5 flex items-center gap-1">
+                <span class="text-[6.5px] text-white/40 uppercase font-bold">Score</span>
+                <span class="text-white font-bold text-[10px]" id="score-val">0</span>
+            </div>
+            <div class="bg-court-navy-light border border-white/10 rounded px-1 py-0.5 flex items-center gap-1">
+                <span class="text-[6.5px] text-white/40 uppercase font-bold">Série</span>
+                <span class="text-tennis-yellow font-bold text-[10px]" id="win-streak-val">0</span>
+            </div>
+            <button class="p-0.5 hover:bg-white/10 rounded transition-colors flex items-center" id="refresh-btn">
+                <span class="material-icons text-white text-xs">refresh</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Zone de jeu principale -->
+    <main class="flex-1 flex flex-col justify-between p-2 min-h-0 overflow-hidden gap-1">
+
+        <!-- Sélecteur de Grille -->
+        <div class="glass-panel p-0.5 rounded flex shrink-0 h-6 items-center">
+            <button class="flex-1 py-0.5 text-[8.5px] font-bold text-white/50 uppercase" onclick="generateGrid(3)">3 X
+                3</button>
+            <button class="flex-1 py-0.5 text-[8.5px] font-bold text-white bg-white/10 rounded"
+                onclick="generateGrid(4)">4 X 4</button>
+            <button class="flex-1 py-0.5 text-[8.5px] font-bold text-white/50 uppercase" onclick="generateGrid(5)">5 X
+                5</button>
+        </div>
+
+        <!-- Zone de l'Acteur Courant -->
+        <div class="shrink-0 flex flex-col gap-0.5">
+            <div class="flex justify-between items-center px-0.5">
+                <span class="text-[7.5px] font-bold uppercase tracking-wider text-white/40">Acteur (Cliquez pour
+                    passer)</span>
+                <span class="text-[7.5px] font-bold text-white/40 uppercase" id="next-actor-preview">Suivant:
+                    Loading...</span>
+            </div>
+
+            <div class="bg-court-navy-light border border-tennis-yellow rounded-lg p-1.5 relative overflow-hidden cursor-pointer hover:bg-white/[0.02] active:scale-[0.99] transition-all h-11 flex flex-col justify-center"
+                id="active-actor-card" onclick="skipActor()">
+                <div class="flex justify-between items-center absolute top-1 left-1.5 right-1.5">
+                    <span class="text-[7px] font-bold text-white/50 uppercase tracking-wide" id="actor-type-label">ATP
+                        Player</span>
+                    <span class="text-tennis-yellow text-[8px] font-bold bg-tennis-yellow/10 px-1 rounded"
+                        id="actor-timer">30s</span>
+                </div>
+                <div class="text-sm font-bold text-tennis-yellow tracking-wide uppercase text-center mt-2"
+                    id="current-actor-name">
+                    Loading...
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-[1.5px] bg-white/5">
+                    <div id="timer-progress"
+                        class="h-full bg-tennis-yellow w-full transition-all duration-1000 ease-linear"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conteneur de Grille Auto-Ajustable -->
+        <div class="flex-1 min-h-0 w-full relative flex items-center justify-center py-1">
+            <div class="glass-panel p-1 rounded-lg bingo-grid" id="bingo-grid">
+                <!-- Injecté via JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Navigation basse -->
+    <nav class="bg-court-navy border-t border-white/10 shrink-0 h-9 flex justify-around items-center z-50">
+        <button class="flex flex-col items-center text-tennis-yellow">
+            <span class="material-icons text-xs">grid_view</span>
+            <span class="text-[6.5px] font-bold uppercase tracking-tight">Jouer</span>
+        </button>
+        <button class="flex flex-col items-center text-white/40">
+            <span class="material-icons text-xs">leaderboard</span>
+            <span class="text-[6.5px] font-bold uppercase tracking-tight">Stats</span>
+        </button>
+        <button class="flex flex-col items-center text-white/40">
+            <span class="material-icons text-xs">groups</span>
+            <span class="text-[6.5px] font-bold uppercase tracking-tight">Social</span>
+        </button>
+    </nav>
+
+    <!-- Modals -->
+    <div id="bingo-modal"
+        class="fixed inset-0 bg-court-navy/95 backdrop-blur-md z-[150] flex flex-col items-center justify-center gap-2 transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="text-4xl animate-bounce">🏆</div>
+        <h2 class="text-3xl font-extrabold text-tennis-yellow tracking-widest uppercase">BINGO !</h2>
+        <p class="text-white/60 text-[10px] uppercase tracking-wider">Grille complétée !</p>
+        <div class="bg-white/10 px-3 py-1 rounded-full border border-white/10 mt-0.5">
+            <span class="text-tennis-yellow font-bold text-xs">+500 PTS</span>
+        </div>
+    </div>
+
+    <script>
+        // Base de données avec intégration complète des victoires croisées validées historiquement
+        const actorMatches = {
+            "Carlos Alcaraz": ["WORLD NO. 1", "+10 ATP TITLES", "ROLAND GARROS WINNER", "WIMBLEDON CHAMPION", "BORN IN EUROPE", "FROM SPAIN", "MADRID WINNER", "US OPEN WINNER", "INDIAN WELLS WINNER", "MIAMI WINNER", "HAS BEATEN DJOKOVIC", "HAS BEATEN SINNER", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Jannik Sinner": ["WORLD NO. 1", "+10 ATP TITLES", "BORN IN EUROPE", "FROM ITALY", "AUSTRALIAN OPEN WINNER", "US OPEN WINNER", "SHANGHAI WINNER", "CINCINNATI WINNER", "MIAMI WINNER", "CANADA MASTERS 1000 WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Novak Djokovic": ["WORLD NO. 1", "+10 ATP TITLES", "ROLAND GARROS WINNER", "WIMBLEDON CHAMPION", "US OPEN CHAMPION", "AUSTRALIAN OPEN WINNER", "BORN IN EUROPE", "REPRESENTS SERBIA", "SHANGHAI WINNER", "CANADA MASTERS 1000 WINNER", "CINCINNATI WINNER", "MADRID WINNER", "ROME WINNER", "PARIS WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Casper Ruud": ["+10 ATP TITLES", "BORN IN EUROPE", "FROM NORWAY", "ROLAND GARROS FINALIST", "US OPEN FINALIST", "HAS WON AN ATP 500 TITLE", "HAS PLAYED IN THE ATP FINALS", "MONTECARLO FINALIST", "ROME FINALIST", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Holger Rune": ["BORN IN EUROPE", "FROM DENMARK", "PARIS WINNER", "HAS WON AN ATP 1000 TITLE", "MONTECARLO FINALIST", "ROME FINALIST", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Daniil Medvedev": ["WORLD NO. 1", "+10 ATP TITLES", "US OPEN CHAMPION", "US OPEN FINALIST", "ROLAND GARROS FINALIST", "BORN IN EUROPE", "FROM RUSSIA", "SHANGHAI WINNER", "CANADA MASTERS 1000 WINNER", "MIAMI WINNER", "ROME WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Taylor Fritz": ["FROM USA", "US OPEN FINALIST", "INDIAN WELLS WINNER", "HAS WON AN ATP 1000 TITLE", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Alex de Minaur": ["FROM AUSTRALIA", "PLAYS WITH A CAP", "HAS PLAYED AT ATP FINALS", "HAS WON AN ATP 500 TITLE", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Hubert Hurkacz": ["BORN IN EUROPE", "FROM POLAND", "MIAMI WINNER", "SHANGHAI WINNER", "HAS WON AN ATP 1000 TITLE", "HAS PLAYED AT ATP FINALS", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Stefanos Tsitsipas": ["+10 ATP TITLES", "ROLAND GARROS FINALIST", "AUSTRALIAN OPEN FINALIST", "BORN IN EUROPE", "FROM GREECE", "ONE HAND BACKHAND", "MONTECARLO WINNER", "BARCELONA FINALIST", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV"],
+            "Alexander Zverev": ["+10 ATP TITLES", "US OPEN FINALIST", "ROLAND GARROS FINALIST", "BORN IN EUROPE", "FROM GERMANY", "ROME WINNER", "MADRID WINNER", "PARIS WINNER", "CANADA MASTERS 1000 WINNER", "CINCINNATI WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Rafael Nadal": ["WORLD NO. 1", "+10 ATP TITLES", "LEFT HANDED", "ROLAND GARROS WINNER", "WIMBLEDON CHAMPION", "US OPEN CHAMPION", "AUSTRALIAN OPEN WINNER", "BORN IN EUROPE", "FROM SPAIN", "ROME WINNER", "MADRID WINNER", "MONTECARLO WINNER", "CANADA MASTERS 1000 WINNER", "CINCINNATI WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Ben Shelton": ["TOKYO WINNER", "DALLAS OPEN WINNER", "CANADA MASTERS 1000 WINNER", "FROM USA", "LEFT HANDED", "HAS WON AN ATP 500 TITLE", "HAS BEATEN RUBLEV", "HAS BEATEN KHACHANOV", "HAS WON A ATP 1000 TITLE"],
+            "Ugo Humbert": ["LEFT HANDED", "BORN IN EUROPE", "FROM FRANCE", "PARIS FINALIST", "HAS WON AN ATP 500 TITLE", "HAS BEATEN ALCARAZ", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Rafael Jodar": ["FROM SPAIN", "BORN AFTER 2000", "BORN IN EUROPE", "US OPEN JUNIORS CHAMPION"],
+            "Arthur Fils": ["FROM FRANCE", "BORN AFTER 2000", "BORN IN EUROPE", "HAMBURG WINNER", "TOKYO WINNER", "HAS WON AN ATP 500 TITLE", "HAS PLAYED AT ATP NEXT GEN FINALS", "HAS BEATEN RUBLEV", "HAS BEATEN ALCARAZ", "HAS BEATEN TSITSIPAS"],
+            "Andrey Rublev": ["+10 ATP TITLES", "BORN IN EUROPE", "FROM RUSSIA", "MONTECARLO WINNER", "MADRID WINNER", "CINCINNATI FINALIST", "SHANGHAI FINALIST", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN TSITSIPAS"],
+            "Karen Khachanov": ["BORN IN EUROPE", "FROM RUSSIA", "PARIS WINNER", "HAS WON AN ATP 1000 TITLE", "OLYMPIC SILVER MEDALIST", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Francesco Passaro": ["FROM ITALY", "BORN AFTER 2000", "BORN IN EUROPE", "HAS PLAYED AT ATP NEXT GEN FINALS"],
+            "Learner Tien": ["LEFT HANDED", "FROM USA", "BORN AFTER 2000"],
+            "Lorenzo Musetti": ["FROM ITALY", "BORN AFTER 2000", "BORN IN EUROPE", "ONE HAND BACKHAND", "OLYMPIC BRONZE MEDALIST", "HAS BEATEN DJOKOVIC", "HAS BEATEN ALCARAZ"],
+            "Félix Auger-Aliassime": ["FROM CANADA", "BORN AFTER 2000", "MADRID FINALIST", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Moise Kouamé": ["FROM FRANCE", "BORN AFTER 2000", "BLACK PLAYER", "BORN IN EUROPE"],
+            "Jack Draper": ["FROM UK", "LEFT HANDED", "BORN AFTER 2000", "BORN IN EUROPE", "US OPEN SEMIFINALIST", "VIENNA WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN TSITSIPAS", "HAS BEATEN RUBLEV"],
+            "Joao Fonseca": ["FROM BRAZIL", "BORN AFTER 2000", "US OPEN JUNIORS CHAMPION"],
+            "Alexander Blockx": ["FROM BELGIUM", "BORN AFTER 2000", "BORN IN EUROPE"],
+            "Luca Van Assche": ["FROM FRANCE", "BORN AFTER 2000", "BORN IN EUROPE"],
+            "Brandon Nakashima": ["FROM USA", "BORN AFTER 2000", "ATP NEXT GEN WINNER", "HAS BEATEN RUBLEV"],
+            "Nuno Borges": ["FROM PORTUGAL", "BORN IN EUROPE"],
+            "Arthur Rinderknech": ["FROM FRANCE", "BORN BEFORE 2000", "BORN IN EUROPE"],
+            "Quentin Halys": ["FROM FRANCE", "BORN BEFORE 2000", "BORN IN EUROPE"],
+            "Pierre-Hugues Herbert": ["FROM FRANCE", "BORN BEFORE 2000", "BORN IN EUROPE", "CAREER GRAND SLAM IN DOUBLES", "HAS BEATEN TSITSIPAS"],
+            "Corentin Moutet": ["FROM FRANCE", "LEFT HANDED", "BORN IN EUROPE"],
+            "Valentin Vacherot": ["FROM MONACO", "BORN IN EUROPE"],
+            "Lucas Pouille": ["FROM FRANCE", "BORN BEFORE 2000", "BORN IN EUROPE", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV"],
+            "Juncheng Shang": ["FROM CHINA", "LEFT HANDED", "BORN AFTER 2000", "CHENGDU WINNER"],
+            "Nicolas Moreno De Alboran": ["FROM USA"],
+            "Arthur Cazaux": ["FROM FRANCE", "BORN AFTER 2000", "BORN IN EUROPE"],
+            "Jakub Mensik": ["FROM CZECH REPUBLIC", "BORN AFTER 2000", "BORN IN EUROPE", "DOHA FINALIST", "HAS BEATEN RUBLEV"],
+            "Alexei Popyrin": ["FROM AUSTRALIA", "MONTREAL WINNER", "HAS WON AN ATP 1000 TITLE", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Alejandro Davidovich Fokina": ["FROM SPAIN", "BORN IN EUROPE", "MONTECARLO FINALIST", "HAS BEATEN DJOKOVIC", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Tommy Paul": ["FROM USA", "AUSTRALIAN OPEN SEMIFINALIST", "QUEENS WINNER", "HAS BEATEN ALCARAZ", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV"],
+            "Denis Shapovalov": ["FROM CANADA", "LEFT HANDED", "ONE HAND BACKHAND", "PARIS FINALIST", "HAS BEATEN ALCARAZ", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV"],
+            "Frances Tiafoe": ["FROM USA", "BORN BEFORE 2000", "BLACK PLAYER", "US OPEN SEMIFINALIST", "HAS BEATEN NADAL", "HAS BEATEN TSITSIPAS", "HAS BEATEN RUBLEV"],
+            "Andy Murray": ["WORLD NO. 1", "+10 ATP TITLES", "WIMBLEDON CHAMPION", "US OPEN CHAMPION", "FROM UK", "BORN IN EUROPE", "BORN BEFORE 1990", "SHANGHAI WINNER", "HAS PLAYED AT ATP FINALS", "HAS WON AN OLYMPIC GOLD MEDAL", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Stan Wawrinka": ["+10 ATP TITLES", "ROLAND GARROS WINNER", "US OPEN CHAMPION", "AUSTRALIAN OPEN WINNER", "FROM SWITZERLAND", "BORN IN EUROPE", "BORN BEFORE 1990", "ONE HAND BACKHAND", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Feliciano Lopez": ["FROM SPAIN", "BORN BEFORE 1990", "BORN IN EUROPE", "LEFT HANDED", "ONE HAND BACKHAND", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV"],
+            "David Ferrer": ["+10 ATP TITLES", "ROLAND GARROS FINALIST", "FROM SPAIN", "BORN BEFORE 1990", "BORN IN EUROPE", "PARIS WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+            "Andy Roddick": ["WORLD NO. 1", "+10 ATP TITLES", "US OPEN CHAMPION", "WIMBLEDON FINALIST", "FROM USA", "BORN BEFORE 1990", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+            "Mardy Fish": ["FROM USA", "BORN BEFORE 1990", "OLYMPIC SILVER MEDALIST", "HAS BEATEN NADAL", "HAS BEATEN DJOKOVIC"],
+            "Lleyton Hewitt": ["WORLD NO. 1", "+10 ATP TITLES", "US OPEN CHAMPION", "WIMBLEDON CHAMPION", "FROM AUSTRALIA", "BORN BEFORE 1990", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+            "Gael Monfils": ["+10 ATP TITLES", "FROM FRANCE", "BORN BEFORE 1990", "BORN IN EUROPE", "HAS PLAYED AT ATP FINALS", "HAS BEATEN ALCARAZ", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Marcos Baghdatis": ["FROM CYPRUS", "BORN BEFORE 1990", "BORN IN EUROPE", "AUSTRALIAN OPEN FINALIST", "HAS BEATEN NADAL", "HAS BEATEN DJOKOVIC"],
+            "Tomas Berdych": ["+10 ATP TITLES", "WIMBLEDON FINALIST", "FROM CZECH REPUBLIC", "BORN BEFORE 1990", "BORN IN EUROPE", "PARIS WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+            "Kevin Anderson": ["US OPEN FINALIST", "WIMBLEDON FINALIST", "FROM SOUTH AFRICA", "BORN BEFORE 1990", "HAS BEATEN MURRAY", "HAS BEATEN DJOKOVIC"],
+            "Jo-Wilfried Tsonga": ["+10 ATP TITLES", "AUSTRALIAN OPEN FINALIST", "FROM FRANCE", "BORN BEFORE 1990", "BORN IN EUROPE", "PARIS WINNER", "CANADA MASTERS 1000 WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+            "John Isner": ["+10 ATP TITLES", "FROM USA", "BORN BEFORE 1990", "MIAMI WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Marin Cilic": ["+10 ATP TITLES", "US OPEN CHAMPION", "WIMBLEDON FINALIST", "AUSTRALIAN OPEN FINALIST", "FROM CROATIA", "BORN BEFORE 1990", "BORN IN EUROPE", "CINCINNATI WINNER", "HAS PLAYED AT ATP FINALS", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Milos Raonic": ["WIMBLEDON FINALIST", "FROM CANADA", "BORN BEFORE 1990", "HAS BEATEN NADAL", "HAS BEATEN TSITSIPAS"],
+            "Richard Gasquet": ["+10 ATP TITLES", "FROM FRANCE", "BORN BEFORE 1990", "BORN IN EUROPE", "ONE HAND BACKHAND", "HAS BEATEN RUBLEV", "HAS BEATEN TSITSIPAS"],
+            "Fernando Verdasco": ["FROM SPAIN", "BORN BEFORE 1990", "BORN IN EUROPE", "LEFT HANDED", "HAS BEATEN NADAL", "HAS BEATEN DJOKOVIC"],
+            "Juan Martin del Potro": ["+10 ATP TITLES", "US OPEN CHAMPION", "FROM ARGENTINA", "BORN BEFORE 1990", "OLYMPIC SILVER MEDALIST", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL", "HAS BEATEN THIEM"],
+            "David Nalbandian": ["FROM ARGENTINA", "BORN BEFORE 1990", "WIMBLEDON FINALIST", "MADRID WINNER", "PARIS WINNER", "HAS BEATEN DJOKOVIC", "HAS BEATEN NADAL"],
+
+            "Aryna Sabalenka": ["WORLD NO. 1", "AUSTRALIAN OPEN WINNER", "US OPEN WINNER", "US OPEN FINALIST", "BORN IN EUROPE"],
+            "Iga Swiatek": ["WORLD NO. 1", "ROLAND GARROS WINNER", "US OPEN WINNER", "BORN IN EUROPE", "FROM POLAND"],
+            "Elena Rybakina": ["WIMBLEDON CHAMPION", "AUSTRALIAN OPEN FINALIST", "BORN IN EUROPE", "REPRESENTS KAZAKHSTAN"],
+            "Coco Gauff": ["WORLD NO. 1", "US OPEN WINNER", "US OPEN FINALIST", "ROLAND GARROS FINALIST", "REPRESENTS USA", "BORN AFTER 2000", "BLACK PLAYER"],
+            "Jasmine Paolini": ["ROLAND GARROS FINALIST", "WIMBLEDON FINALIST", "BORN IN EUROPE", "FROM ITALY"],
+            "Qinwen Zheng": ["AUSTRALIAN OPEN FINALIST", "FROM CHINA", "BORN AFTER 2000", "HAS WON AN OLYMPIC GOLD MEDAL"],
+            "Jessica Pegula": ["US OPEN FINALIST", "REPRESENTS USA", "CANADA MASTERS 1000 WINNER"],
+            "Ons Jabeur": ["WIMBLEDON FINALIST", "US OPEN FINALIST", "BORN IN AFRICA", "FROM TUNISIA"],
+            "Leylah Fernandez": ["US OPEN FINALIST", "FROM CANADA", "LEFT HANDED", "BORN AFTER 2000"],
+            "Victoria Mboko": ["FROM CANADA", "BORN AFTER 2000", "BLACK PLAYER"],
+
+            "Patrick Mouratoglou": ["PLAYER COACH", "BORN IN EUROPE", "FROM FRANCE"],
+            "Darren Cahill": ["PLAYER COACH", "FROM AUSTRALIA"],
+            "Marian Vajda": ["PLAYER COACH", "BORN IN EUROPE", "FROM SLOVAKIA"],
+            "Goran Ivanisevic": ["PLAYER COACH", "BORN IN EUROPE", "FROM CROATIA"],
+            "Toni Nadal": ["PLAYER COACH", "BORN IN EUROPE", "FROM SPAIN"],
+            "Ivan Lendl": ["PLAYER COACH", "BORN IN EUROPE", "REPRESENTS USA"],
+
+            "Mohamed Lahyani": ["CHAIR REFEREE", "BORN IN EUROPE", "REPRESENTS SWEDEN"],
+            "Eva Asderaki-Moore": ["CHAIR REFEREE", "BORN IN EUROPE", "FROM GREECE"],
+            "Carlos Bernardes": ["CHAIR REFEREE", "FROM BRAZIL"],
+            "Marija Cicak": ["CHAIR REFEREE", "BORN IN EUROPE", "FROM CROATIA"],
+            "Aurélie Tourte": ["CHAIR REFEREE", "BORN IN EUROPE", "FROM FRANCE"]
+        };
+
+        const categories = Array.from(new Set(Object.values(actorMatches).flat()));
+
+        let currentActorTimer = 30;
+        let currentActor = null;
+        let nextActorData = null;
+        let currentGridSize = 4;
+        let winStreak = 0;
+        let score = 0;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(587.33, now); osc.frequency.setValueAtTime(880, now + 0.08);
+                gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'incorrect') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(130, now); osc.frequency.linearRampToValueAtTime(85, now + 0.15);
+                gain.gain.setValueAtTime(0.06, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            }
+        }
+
+        function generateGrid(size = 4) {
+            currentGridSize = size;
+            const grid = document.getElementById('bingo-grid');
+
+            let gapClass = "gap-0.5";
+            let cellPadding = "p-0.5";
+            let fontSize = "text-[6.8px] xs:text-[7.5px]";
+            let matchedCategoryFontSize = "text-[4.8px] xs:text-[5.2px]";
+            let matchedActorFontSize = "text-[6px] xs:text-[6.8px]";
+
+            if (size === 3) {
+                fontSize = "text-[8px] xs:text-[9px]";
+                matchedCategoryFontSize = "text-[5.5px] xs:text-[6px]";
+                matchedActorFontSize = "text-[8px] xs:text-[9px]";
+            } else if (size === 5) {
+                fontSize = "text-[5.2px] xs:text-[5.8px]";
+                matchedCategoryFontSize = "text-[3.8px] xs:text-[4.2px]";
+                matchedActorFontSize = "text-[5.2px] xs:text-[5.8px]";
+            }
+
+            grid.className = `bg-court-navy-light p-0.5 rounded-lg bingo-grid ${gapClass}`;
+            grid.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+            grid.style.gridTemplateRows = `repeat(${size}, minmax(0, 1fr))`;
+            grid.innerHTML = '';
+
+            const shuffled = [...categories].sort(() => 0.5 - Math.random());
+            const selection = [];
+            for (let i = 0; i < size * size; i++) {
+                selection.push(shuffled[i % shuffled.length]);
+            }
+
+            selection.forEach(text => {
+                const cell = document.createElement('div');
+                cell.className = `h-full w-full bg-court-navy border border-white/5 rounded ${cellPadding} flex flex-col items-center justify-center text-center cursor-pointer hover:bg-white/5 active:scale-95 transition-all relative overflow-hidden`;
+                cell.dataset.category = text;
+                cell.dataset.matched = "false";
+                cell.innerHTML = `<span class="${fontSize} font-bold leading-none uppercase text-white/60">${text}</span>`;
+
+                cell.onclick = () => {
+                    if (cell.dataset.matched === "true" || !currentActor) return;
+                    const category = cell.dataset.category;
+                    const actorName = currentActor.name;
+                    const matches = actorMatches[actorName] || [];
+
+                    if (matches.includes(category)) {
+                        playSound('correct');
+                        cell.dataset.matched = "true";
+                        cell.classList.remove('bg-court-navy', 'hover:bg-white/5');
+                        cell.classList.add('bg-tennis-yellow', 'text-court-navy');
+
+                        cell.innerHTML = `
+                            <span class="${matchedCategoryFontSize} font-bold leading-none uppercase text-court-navy/50 mb-0.5">${category}</span>
+                            <span class="${matchedActorFontSize} font-bold leading-none uppercase text-court-navy">${actorName}</span>
+                        `;
+
+                        winStreak++;
+                        score += 100 + winStreak * 10;
+                        document.getElementById('win-streak-val').innerText = winStreak;
+                        document.getElementById('score-val').innerText = score;
+
+                        if (checkBingo(currentGridSize)) {
+                            triggerBingoCelebration();
+                        }
+                        updateActorDisplay();
+                    } else {
+                        playSound('incorrect');
+                        cell.classList.add('bg-red-950/70', 'border-red-500', 'shake-animation');
+                        winStreak = 0;
+                        document.getElementById('win-streak-val').innerText = winStreak;
+                        currentActorTimer = Math.max(0, currentActorTimer - 5);
+                        updateTimerDisplay();
+
+                        setTimeout(() => {
+                            cell.classList.remove('bg-red-950/70', 'border-red-500', 'shake-animation');
+                        }, 300);
+                    }
+                };
+                grid.appendChild(cell);
+            });
+
+            const buttons = document.querySelectorAll('main > div:first-child button');
+            buttons.forEach(btn => {
+                if (btn.innerText.includes(size.toString())) {
+                    btn.className = "flex-1 py-0.5 text-[8px] font-bold text-white bg-white/10 rounded";
+                } else {
+                    btn.className = "flex-1 py-0.5 text-[8px] font-bold text-white/40 uppercase";
+                }
+            });
+        }
+
+        function checkBingo(size) {
+            const cells = Array.from(document.getElementById('bingo-grid').children);
+            if (cells.length === 0) return false;
+
+            for (let r = 0; r < size; r++) {
+                let rowMatched = true;
+                for (let c = 0; c < size; c++) {
+                    if (cells[r * size + c].dataset.matched !== "true") { rowMatched = false; break; }
+                }
+                if (rowMatched) return true;
+            }
+
+            for (let c = 0; c < size; c++) {
+                let colMatched = true;
+                for (let r = 0; r < size; r++) {
+                    if (cells[r * size + c].dataset.matched !== "true") { colMatched = false; break; }
+                }
+                if (colMatched) return true;
+            }
+
+            let diag1Matched = true;
+            for (let i = 0; i < size; i++) {
+                if (cells[i * size + i].dataset.matched !== "true") { diag1Matched = false; break; }
+            }
+            if (diag1Matched) return true;
+
+            let diag2Matched = true;
+            for (let i = 0; i < size; i++) {
+                if (cells[i * size + (size - 1 - i)].dataset.matched !== "true") { diag2Matched = false; break; }
+            }
+            return diag2Matched;
+        }
+
+        function triggerBingoCelebration() {
+            const modal = document.getElementById('bingo-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                generateGrid(currentGridSize);
+            }, 2000);
+        }
+
+        function getRandomActor() {
+            const allActors = Object.keys(actorMatches);
+            const name = allActors[Math.floor(Math.random() * allActors.length)];
+            const matches = actorMatches[name] || [];
+
+            let typeLabel = "ATP Player";
+            if (matches.includes("CHAIR REFEREE")) typeLabel = "Arbitre";
+            else if (matches.includes("PLAYER COACH")) typeLabel = "Coach";
+            else if (["Aryna Sabalenka", "Iga Swiatek", "Elena Rybakina", "Coco Gauff", "Jasmine Paolini", "Qinwen Zheng", "Jessica Pegula", "Ons Jabeur", "Leylah Fernandez", "Victoria Mboko"].includes(name)) {
+                typeLabel = "WTA Player";
+            }
+            return { name, type: typeLabel };
+        }
+
+        function updateActorDisplay() {
+            if (!nextActorData) {
+                currentActor = getRandomActor();
+                nextActorData = getRandomActor();
+            } else {
+                currentActor = nextActorData;
+                nextActorData = getRandomActor();
+            }
+
+            document.getElementById('current-actor-name').innerText = "   " + currentActor.name;
+            document.getElementById('actor-type-label').innerText = "   " + currentActor.type;
+            document.getElementById('next-actor-preview').innerText = "Suivant: " + nextActorData.name;
+
+            currentActorTimer = 30;
+            updateTimerDisplay();
+        }
+
+        function skipActor() {
+            winStreak = 0;
+            document.getElementById('win-streak-val').innerText = winStreak;
+            updateActorDisplay();
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('actor-timer').innerText = currentActorTimer + "s";
+            const percent = (currentActorTimer / 30) * 100;
+            document.getElementById('timer-progress').style.width = percent + "%";
+        }
+
+        setInterval(() => {
+            if (currentActorTimer > 0) {
+                currentActorTimer--;
+                updateTimerDisplay();
+                if (currentActorTimer === 0) {
+                    winStreak = 0;
+                    document.getElementById('win-streak-val').innerText = winStreak;
+                    updateActorDisplay();
+                }
+            }
+        }, 1000);
+
+        document.getElementById('refresh-btn').onclick = () => {
+            generateGrid(currentGridSize);
+            updateActorDisplay();
+        };
+
+        window.onload = () => {
+            generateGrid(4);
+            updateActorDisplay();
+        };
+    </script>
+</body>
+
+</html>
